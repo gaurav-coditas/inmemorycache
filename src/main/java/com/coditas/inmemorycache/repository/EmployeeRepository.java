@@ -1,4 +1,4 @@
-package com.coditas.inmemorycache;
+package com.coditas.inmemorycache.repository;
 
 import com.coditas.inmemorycache.model.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
