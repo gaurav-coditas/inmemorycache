@@ -1,6 +1,9 @@
 package com.coditas.inmemorycache.util;
 
-import org.apache.commons.collections.map.LRUMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Cache utility class, that uses LRU map to store cached objects
@@ -11,21 +14,48 @@ import org.apache.commons.collections.map.LRUMap;
 public final class InMemoryCache<K, T> {
 
     /** cache map. */
-    private LRUMap cacheMap;
+    private ConcurrentHashMap cacheMap;
 
     /** inmemory cache instance. */
     private static InMemoryCache<String, Object> instance = null;
 
-    protected class CacheObject {
+    private int max_items;
+
+    public int getMax_items() {
+        return max_items;
+    }
+
+    public class CacheObject implements Comparable{
         public T value;
+
+        private Long timestamp = System.currentTimeMillis();
 
         protected CacheObject(T value) {
             this.value = value;
         }
+
+        public Long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(Long timestamp) {
+            this.timestamp = timestamp;
+        }
+
+        public T getValue() {
+            return value;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            CacheObject cacheObject = (CacheObject) o;
+            return this.timestamp.compareTo(cacheObject.getTimestamp());
+        }
     }
 
     private InMemoryCache(int maxItems) {
-        cacheMap = new LRUMap(maxItems);
+        cacheMap = new ConcurrentHashMap();
+        this.max_items = maxItems;
     }
 
     /**
@@ -45,9 +75,13 @@ public final class InMemoryCache<K, T> {
      * @param value value
      */
     public void put(K key, T value) {
-        synchronized (cacheMap) {
-            cacheMap.put(key, new CacheObject(value));
+        if(cacheMap.size() >= max_items) {
+            List<ConcurrentHashMap.Entry> list = (List) cacheMap.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toList());
+            if(list != null && !list.isEmpty()) {
+                cacheMap.remove(list.get(0).getKey());
+            }
         }
+        cacheMap.put(key, new CacheObject(value));
     }
 
     /**
@@ -56,14 +90,13 @@ public final class InMemoryCache<K, T> {
      * @return object from cache
      */
     public T get(K key) {
-        synchronized (cacheMap) {
-            CacheObject c = (CacheObject) cacheMap.get(key);
+        CacheObject c = (CacheObject) cacheMap.get(key);
 
-            if (c == null)
-                return null;
-            else {
-                return c.value;
-            }
+        if (c == null)
+            return null;
+        else {
+            c.setTimestamp(System.currentTimeMillis());
+            return c.value;
         }
     }
 
@@ -72,18 +105,14 @@ public final class InMemoryCache<K, T> {
      * @return returns size of cache
      */
     public int size() {
-        synchronized (cacheMap) {
-            return cacheMap.size();
-        }
+        return cacheMap.size();
     }
 
     /**
      * empties cache
      */
     public void flush() {
-        synchronized (cacheMap) {
-            cacheMap.clear();
-        }
+        cacheMap.clear();
     }
 
     /**
@@ -91,8 +120,10 @@ public final class InMemoryCache<K, T> {
      * @param key key
      */
     public void delete(K key) {
-        synchronized (cacheMap) {
-            cacheMap.remove(key);
-        }
+        cacheMap.remove(key);
+    }
+
+    public ConcurrentHashMap getCacheMap() {
+        return cacheMap;
     }
 }

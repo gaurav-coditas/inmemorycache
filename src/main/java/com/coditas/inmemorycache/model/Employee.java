@@ -1,35 +1,16 @@
 package com.coditas.inmemorycache.model;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import java.util.Objects;
 
 @Entity
 @Table(name = "employee")
-public class Employee {
-
-    /** id. */
-    private Long id;
+public class Employee extends BaseEntity{
 
     /** name. */
     private String name;
-
-    /**
-     *
-     * @return employee id
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    public Long getId() {
-        return id;
-    }
-
-    /**
-     *
-     * @param id employee id
-     */
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     /**
      *
@@ -53,11 +34,11 @@ public class Employee {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Employee employee = (Employee) o;
-        return Objects.equals(id, employee.id);
+        return Objects.equals(getId(), employee.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(getId());
     }
 }
